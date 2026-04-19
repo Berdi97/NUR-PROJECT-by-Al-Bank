@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>QuickBite POS</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0e0c;
+    --surface: #1a1916;
+    --surface2: #242220;
+    --border: #2e2c28;
+    --accent: #f5a623;
+    --accent2: #e8441a;
+    --green: #2eb872;
+    --text: #f0ede6;
+    --muted: #7a7568;
+    --card-radius: 16px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--text); }
+
+  /* LAYOUT */
+  #app { display: grid; grid-template-columns: 1fr 340px; grid-template-rows: 64px 1fr; height: 100vh; }
+
+  /* HEADER */
+  header {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    z-index: 10;
+  }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; color: var(--accent); }
+  .logo span { color: var(--accent2); }
+  .header-info { display: flex; align-items: center; gap: 20px; }
+  .staff-badge {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 30px; padding: 6px 14px; font-size: 13px; font-weight: 600;
+  }
+  .staff-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+  .time-display { font-size: 13px; color: var(--muted); font-weight: 500; }
+
+  /* MENU PANEL */
+  #menu-panel { overflow-y: auto; padding: 16px; background: var(--bg); }
+  #menu-panel::-webkit-scrollbar { width: 4px; }
+  #menu-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* CATEGORY TABS */
+  .cat-tabs { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; }
+  .cat-tabs::-webkit-scrollbar { display: none; }
+  .cat-tab {
+    flex-shrink: 0;
+    padding: 8px 18px; border-radius: 30px; border: 1.5px solid var(--border);
+    background: var(--surface); font-size: 13px; font-weight: 600;
+    color: var(--muted); cursor: pointer; transition: all .18s;
+  }
+  .cat-tab.active { background: var(--accent); border-color: var(--accent); color: #000; }
+
+  /* MENU GRID */
+  .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .menu-item {
+    background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--card-radius);
+    padding: 14px 12px; cursor: pointer; transition: all .15s; position: relative; overflow: hidden;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .menu-item:active { transform: scale(0.96); }
+  .menu-item:hover { border-color: var(--accent); background: var(--surface2); }
+  .menu-item-emoji { font-size: 32px; line-height: 1; margin-bottom: 4px; }
+  .menu-item-name { font-size: 13px; font-weight: 700; line-height: 1.2; }
+  .menu-item-price { font-size: 15px; font-weight: 700; color: var(--accent); }
+  .menu-item-badge {
+    position: absolute; top: 8px; right: 8px;
+    background: var(--accent2); color: #fff; font-size: 10px; font-weight: 700;
+    padding: 2px 7px; border-radius: 30px;
+  }
+  .add-flash {
+    animation: flash .3s ease;
+  }
+  @keyframes flash {
+    0% { background: var(--surface); }
+    50% { background: #2e2600; border-color: var(--accent); }
+    100% { background: var(--surface); }
+  }
+
+  /* ORDER PANEL */
+  #order-panel {
+    display: flex; flex-direction: column;
+    background: var(--surface); border-left: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .order-header {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .order-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1px; color: var(--text); }
+  .order-num { font-size: 12px; color: var(--muted); font-weight: 600; }
+
+  /* ORDER TYPE TOGGLE */
+  .order-type-toggle {
+    display: flex; margin: 10px 16px; border-radius: 10px; overflow: hidden;
+    border: 1.5px solid var(--border); background: var(--bg);
+  }
+  .order-type-btn {
+    flex: 1; padding: 8px 0; font-size: 12px; font-weight: 700; text-align: center;
+    cursor: pointer; color: var(--muted); transition: all .15s; border: none; background: transparent;
+  }
+  .order-type-btn.active { background: var(--accent2); color: #fff; }
+
+  /* TABLE NUMBER */
+  .table-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 16px 10px; border-bottom: 1px solid var(--border);
+  }
+  .table-label { font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+  .table-input {
+    background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px;
+    color: var(--text); font-size: 14px; font-family: 'DM Sans', sans-serif; font-weight: 600;
+    padding: 5px 10px; width: 70px; text-align: center;
+  }
+  .table-input:focus { outline: none; border-color: var(--accent); }
+
+  /* ORDER ITEMS */
+  #order-items { flex: 1; overflow-y: auto; padding: 8px 16px; }
+  #order-items::-webkit-scrollbar { width: 3px; }
+  #order-items::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .empty-order { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 10px; }
+  .empty-order-icon { font-size: 48px; opacity: .3; }
+  .empty-order-text { font-size: 13px; color: var(--muted); font-weight: 500; }
+
+  .order-line {
+    display: flex; align-items: center; gap: 10px; padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    animation: slideIn .2s ease;
+  }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+  .order-line-emoji { font-size: 20px; }
+  .order-line-info { flex: 1; min-width: 0; }
+  .order-line-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .order-line-unit { font-size: 11px; color: var(--muted); }
+  .qty-ctrl { display: flex; align-items: center; gap: 6px; }
+  .qty-btn {
+    width: 26px; height: 26px; border-radius: 8px; border: 1.5px solid var(--border);
+    background: var(--bg); color: var(--text); font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-weight: 700;
+    transition: all .12s; line-height: 1;
+  }
+  .qty-btn:active { transform: scale(0.88); }
+  .qty-btn.minus:hover { border-color: var(--accent2); color: var(--accent2); }
+  .qty-btn.plus:hover { border-color: var(--green); color: var(--green); }
+  .qty-num { font-size: 14px; font-weight: 700; min-width: 18px; text-align: center; }
+  .order-line-total { font-size: 13px; font-weight: 700; color: var(--accent); min-width: 44px; text-align: right; }
+
+  /* NOTE INPUT */
+  .note-area { padding: 0 16px 8px; }
+  .note-input {
+    width: 100%; background: var(--bg); border: 1.5px solid var(--border); border-radius: 10px;
+    color: var(--muted); font-size: 12px; font-family: 'DM Sans', sans-serif;
+    padding: 8px 12px; resize: none; height: 52px;
+  }
+  .note-input:focus { outline: none; border-color: var(--accent); color: var(--text); }
+  .note-input::placeholder { color: var(--muted); }
+
+  /* TOTALS */
+  .totals { padding: 10px 16px; border-top: 1px solid var(--border); }
+  .totals-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-bottom: 5px; }
+  .totals-row.grand { font-size: 20px; font-weight: 700; color: var(--text); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+  .totals-row.grand span:last-child { color: var(--accent); }
+
+  /* PAYMENT */
+  .payment-row { display: flex; gap: 8px; padding: 8px 16px 4px; }
+  .pay-btn {
+    flex: 1; padding: 10px 6px; border-radius: 10px; border: 1.5px solid var(--border);
+    background: var(--bg); color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer;
+    transition: all .15s;
+  }
+  .pay-btn.active { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
+
+  /* SUBMIT */
+  .submit-btn {
+    margin: 8px 16px 16px; padding: 16px; border-radius: 12px; border: none;
+    background: var(--accent); color: #000; font-size: 16px; font-weight: 800;
+    font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; cursor: pointer;
+    transition: all .15s; width: calc(100% - 32px);
+  }
+  .submit-btn:hover { background: #f7b94a; }
+  .submit-btn:active { transform: scale(0.97); }
+  .submit-btn:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+
+  /* SUCCESS TOAST */
+  .toast {
+    position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-10px);
+    background: var(--green); color: #fff; padding: 12px 24px; border-radius: 30px;
+    font-size: 14px; font-weight: 700; opacity: 0; pointer-events: none;
+    transition: all .3s; z-index: 100; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .modal-overlay.show { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    padding: 28px; width: 380px; max-width: 90vw;
+    transform: scale(0.95); transition: transform .2s;
+  }
+  .modal-overlay.show .modal { transform: scale(1); }
+  .modal h2 { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 1px; margin-bottom: 6px; }
+  .modal p { font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+  .modal-input-row { margin-bottom: 14px; }
+  .modal-label { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 5px; display: block; }
+  .modal-input {
+    width: 100%; background: var(--bg); border: 1.5px solid var(--border); border-radius: 10px;
+    color: var(--text); font-size: 14px; font-family: 'DM Sans', sans-serif;
+    padding: 10px 14px;
+  }
+  .modal-input:focus { outline: none; border-color: var(--accent); }
+  .modal-btn {
+    width: 100%; padding: 14px; border-radius: 12px; border: none;
+    background: var(--accent); color: #000; font-size: 15px; font-weight: 800;
+    font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; cursor: pointer;
+    transition: background .15s;
+  }
+  .modal-btn:hover { background: #f7b94a; }
+
+  /* LOADING SPINNER */
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(0,0,0,.3); border-top-color: #000; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* SECTION LABEL */
+  .section-label { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; margin-top: 4px; }
+
+  /* CLEAR BTN */
+  .clear-btn { font-size: 11px; font-weight: 700; color: var(--muted); background: none; border: none; cursor: pointer; padding: 0; }
+  .clear-btn:hover { color: var(--accent2); }
+
+  /* LOGOUT BTN */
+  .logout-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 30px; border: 1.5px solid var(--border);
+    background: transparent; color: var(--muted); font-size: 12px; font-weight: 700;
+    font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all .15s;
+  }
+  .logout-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  /* DISCOUNT BADGE ON ORDER LINE */
+  .discount-tag {
+    display: inline-block; background: var(--accent2); color: #fff;
+    font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 20px; margin-left: 4px;
+  }
+  .price-original { text-decoration: line-through; color: var(--muted); font-size: 11px; margin-right: 3px; }
+
+  /* DISCOUNT MODAL */
+  .disc-modal { max-width: 340px; }
+  .disc-modal h2 { margin-bottom: 4px; }
+  .disc-modal .disc-subtitle { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+  .disc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+  .disc-opt {
+    padding: 14px 6px; border-radius: 12px; border: 1.5px solid var(--border);
+    background: var(--bg); color: var(--text); font-size: 18px; font-weight: 800;
+    font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; cursor: pointer;
+    text-align: center; transition: all .15s;
+  }
+  .disc-opt:hover { border-color: var(--accent); color: var(--accent); }
+  .disc-opt.selected { background: var(--accent); border-color: var(--accent); color: #000; }
+  .disc-opt.remove { border-color: var(--accent2); color: var(--accent2); font-size: 12px; }
+  .disc-opt.remove:hover { background: var(--accent2); color: #fff; }
+  .disc-scope { display: flex; gap: 8px; margin-bottom: 14px; }
+  .disc-scope-btn {
+    flex: 1; padding: 9px; border-radius: 10px; border: 1.5px solid var(--border);
+    background: var(--bg); color: var(--muted); font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: all .15s; font-family: 'DM Sans', sans-serif;
+  }
+  .disc-scope-btn.active { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
+  .disc-apply-btn {
+    width: 100%; padding: 13px; border-radius: 12px; border: none;
+    background: var(--accent); color: #000; font-size: 15px; font-weight: 800;
+    font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; cursor: pointer;
+    transition: background .15s;
+  }
+  .disc-apply-btn:hover { background: #f7b94a; }
+  .disc-apply-btn:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+
+  /* DISCOUNT ROW IN ORDER PANEL */
+  .discount-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 16px 2px; font-size: 13px; color: var(--accent2);
+  }
+  .remove-disc-btn {
+    font-size: 11px; font-weight: 700; color: var(--muted); background: none;
+    border: none; cursor: pointer; padding: 0;
+  }
+  .remove-disc-btn:hover { color: var(--accent2); }
+
+  /* LOGIN MODAL */
+  .login-modal h2 { color: var(--accent); }
+  .login-modal .modal-btn-secondary {
+    width: 100%; padding: 11px; border-radius: 12px; border: 1.5px solid var(--border);
+    background: transparent; color: var(--muted); font-size: 13px; font-weight: 700;
+    font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; cursor: pointer;
+    margin-top: 10px; transition: all .15s;
+  }
+  .login-modal .modal-btn-secondary:hover { border-color: var(--muted); color: var(--text); }
+
+  /* NAV TABS IN MENU PANEL */
+  .main-nav { display: flex; gap: 6px; margin-bottom: 14px; }
+  .main-nav-btn {
+    flex: 1; padding: 9px 6px; border-radius: 10px; border: 1.5px solid var(--border);
+    background: var(--surface); color: var(--muted); font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: all .15s; font-family: 'DM Sans', sans-serif; text-align: center;
+  }
+  .main-nav-btn.active { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
+
+  /* HISTORY PANEL */
+  #history-panel { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+  #history-panel.visible { display: flex; }
+  .history-toolbar {
+    display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap;
+  }
+  .history-search {
+    flex: 1; min-width: 140px; background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 10px; color: var(--text); font-size: 13px; font-family: 'DM Sans', sans-serif;
+    padding: 8px 12px;
+  }
+  .history-search:focus { outline: none; border-color: var(--accent); }
+  .history-filter {
+    background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px;
+    color: var(--muted); font-size: 12px; font-family: 'DM Sans', sans-serif; padding: 8px 10px;
+    cursor: pointer;
+  }
+  .history-filter.active { border-color: var(--accent); color: var(--accent); background: var(--surface2); }
+
+  /* HISTORY STATS BAR */
+  .history-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px;
+  }
+  .hstat {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px 12px; text-align: center;
+  }
+  .hstat-val { font-size: 16px; font-weight: 800; color: var(--accent); font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; }
+  .hstat-label { font-size: 10px; color: var(--muted); font-weight: 600; margin-top: 1px; }
+
+  /* HISTORY LIST */
+  #history-list { flex: 1; overflow-y: auto; }
+  #history-list::-webkit-scrollbar { width: 3px; }
+  #history-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .history-card {
+    background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px;
+    margin-bottom: 10px; overflow: hidden; cursor: pointer; transition: border-color .15s;
+  }
+  .history-card:hover { border-color: var(--accent); }
+  .history-card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 14px; gap: 8px;
+  }
+  .history-card-left { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .history-order-num { font-size: 13px; font-weight: 800; color: var(--accent); }
+  .history-meta { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .history-card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+  .history-total { font-size: 15px; font-weight: 800; color: var(--text); }
+  .history-type-badge {
+    font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+  }
+  .badge-dinein  { background: rgba(46,184,114,.15); color: var(--green); }
+  .badge-takeaway { background: rgba(245,166,35,.15); color: var(--accent); }
+  .badge-delivery { background: rgba(232,68,26,.15); color: var(--accent2); }
+
+  /* HISTORY EXPANDED ITEMS */
+  .history-card-body {
+    border-top: 1px solid var(--border); padding: 10px 14px;
+    display: none; flex-direction: column; gap: 4px;
+  }
+  .history-card-body.open { display: flex; }
+  .history-item-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+  .history-item-row span:first-child { flex: 1; }
+  .history-item-row span:last-child { color: var(--text); font-weight: 600; }
+  .history-divider { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
+  .history-total-row { display: flex; justify-content: space-between; font-size: 12px; }
+  .history-total-row.grand-row { font-size: 14px; font-weight: 800; color: var(--accent); margin-top: 2px; }
+  .history-note { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 4px; }
+
+  /* EMPTY HISTORY */
+  .empty-history { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 200px; gap: 10px; }
+  .empty-history-icon { font-size: 40px; opacity: .3; }
+  .empty-history-text { font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <div class="logo">Quick<span>Bite</span> <span style="color:var(--muted);font-size:14px;letter-spacing:1px;font-family:'DM Sans',sans-serif;font-weight:600">POS</span></div>
+    <div class="header-info">
+      <div class="time-display" id="clock"></div>
+      <div class="staff-badge"><div class="staff-dot"></div><span id="staff-name">Staff</span></div>
+      <button class="logout-btn" onclick="logout()">⏻ Log Out</button>
+    </div>
+  </header>
+
+  <!-- MENU PANEL -->
+  <div id="menu-panel">
+    <!-- Main Nav -->
+    <div class="main-nav">
+      <button class="main-nav-btn active" id="nav-menu" onclick="switchView('menu')">🍔 Menu</button>
+      <button class="main-nav-btn" id="nav-history" onclick="switchView('history')">📋 Order History</button>
+    </div>
+
+    <!-- MENU VIEW -->
+    <div id="menu-view">
+      <div class="cat-tabs" id="cat-tabs"></div>
+      <div class="section-label" id="cat-heading">All Items</div>
+      <div class="menu-grid" id="menu-grid"></div>
+    </div>
+
+    <!-- HISTORY VIEW -->
+    <div id="history-panel">
+      <div class="history-toolbar">
+        <input class="history-search" id="history-search" type="text" placeholder="🔍 Search by order #, staff, item…" oninput="renderHistory()">
+        <select class="history-filter" id="history-filter-type" onchange="renderHistory()">
+          <option value="">All Types</option>
+          <option value="dine-in">🪑 Dine In</option>
+          <option value="takeaway">🥡 Takeaway</option>
+          <option value="delivery">🛵 Delivery</option>
+        </select>
+        <select class="history-filter" id="history-filter-staff" onchange="renderHistory()">
+          <option value="">All Staff</option>
+        </select>
+      </div>
+      <div class="history-stats">
+        <div class="hstat"><div class="hstat-val" id="hstat-orders">0</div><div class="hstat-label">ORDERS TODAY</div></div>
+        <div class="hstat"><div class="hstat-val" id="hstat-revenue">$0</div><div class="hstat-label">REVENUE TODAY</div></div>
+        <div class="hstat"><div class="hstat-val" id="hstat-avg">$0</div><div class="hstat-label">AVG ORDER</div></div>
+      </div>
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+  <!-- ORDER PANEL -->
+  <div id="order-panel">
+    <div class="order-header">
+      <div>
+        <div class="order-title">Current Order</div>
+        <div class="order-num" id="order-num">#0001</div>
+      </div>
+      <button class="clear-btn" onclick="clearOrder()">Clear all</button>
+    </div>
+
+    <div class="order-type-toggle">
+      <button class="order-type-btn active" id="btn-dinein" onclick="setOrderType('dine-in')">🪑 Dine In</button>
+      <button class="order-type-btn" id="btn-takeaway" onclick="setOrderType('takeaway')">🥡 Takeaway</button>
+      <button class="order-type-btn" id="btn-delivery" onclick="setOrderType('delivery')">🛵 Delivery</button>
+    </div>
+
+    <div class="table-row" id="table-row">
+      <span class="table-label">Table #</span>
+      <input class="table-input" id="table-num" type="number" min="1" max="99" placeholder="—">
+      <span class="table-label" style="margin-left:auto">Covers</span>
+      <input class="table-input" id="covers" type="number" min="1" max="20" placeholder="—" style="width:55px">
+    </div>
+
+    <div id="order-items">
+      <div class="empty-order">
+        <div class="empty-order-icon">🛒</div>
+        <div class="empty-order-text">Tap items to add them</div>
+      </div>
+    </div>
+
+    <textarea class="note-input note-area" id="order-note" placeholder="Order notes (allergies, special requests…)"></textarea>
+
+    <div class="totals">
+      <div class="totals-row"><span>Subtotal</span><span id="subtotal">$0.00</span></div>
+      <div class="totals-row" id="discount-row" style="display:none;color:var(--accent2)">
+        <span>Discount <span id="discount-label"></span> <button class="remove-disc-btn" onclick="removeAllDiscounts()">✕ remove</button></span>
+        <span id="discount-amount">-$0.00</span>
+      </div>
+      <div class="totals-row"><span>Tax (8%)</span><span id="tax">$0.00</span></div>
+      <div class="totals-row grand"><span>TOTAL</span><span id="grand-total">$0.00</span></div>
+    </div>
+
+    <div class="payment-row">
+      <button class="pay-btn active" id="pay-cash" onclick="setPayment('Cash')">💵 Cash</button>
+      <button class="pay-btn" id="pay-card" onclick="setPayment('Card')">💳 Card</button>
+      <button class="pay-btn" id="pay-mobile" onclick="setPayment('Mobile')">📱 Mobile</button>
+    </div>
+
+    <div style="padding: 0 16px 4px;">
+      <button id="discount-btn" onclick="openDiscountModal(null)" style="
+        width:100%; padding:10px; border-radius:10px; border:1.5px dashed var(--border);
+        background:transparent; color:var(--muted); font-size:13px; font-weight:700;
+        font-family:'DM Sans',sans-serif; cursor:pointer; transition:all .15s;
+      " onmouseover="this.style.borderColor='var(--accent2)';this.style.color='var(--accent2)'"
+         onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+        🏷️ Apply Discount
+      </button>
+    </div>
+
+    <button class="submit-btn" id="submit-btn" onclick="submitOrder()" disabled>SEND ORDER</button>
+  </div>
+</div>
+
+<!-- DISCOUNT MODAL -->
+<div class="modal-overlay" id="discount-modal">
+  <div class="modal disc-modal">
+    <h2>🏷️ Apply Discount</h2>
+    <div class="disc-subtitle" id="disc-subtitle">Choose scope and percentage</div>
+
+    <!-- Scope: single item or all items -->
+    <div class="disc-scope">
+      <button class="disc-scope-btn" id="scope-item" onclick="setDiscScope('item')">Selected Item Only</button>
+      <button class="disc-scope-btn active" id="scope-all" onclick="setDiscScope('all')">All Items</button>
+    </div>
+
+    <!-- Item picker (only visible when scope=item) -->
+    <div id="disc-item-picker" style="display:none; margin-bottom:12px;">
+      <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:6px;">PICK ITEM</label>
+      <select id="disc-item-select" style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;padding:8px 12px;">
+      </select>
+    </div>
+
+    <!-- Discount % options -->
+    <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:8px;">DISCOUNT %</label>
+    <div class="disc-grid">
+      <button class="disc-opt" onclick="selectDisc(5)">5%</button>
+      <button class="disc-opt" onclick="selectDisc(10)">10%</button>
+      <button class="disc-opt" onclick="selectDisc(15)">15%</button>
+      <button class="disc-opt" onclick="selectDisc(20)">20%</button>
+      <button class="disc-opt" onclick="selectDisc(25)">25%</button>
+      <button class="disc-opt" onclick="selectDisc(30)">30%</button>
+      <button class="disc-opt" onclick="selectDisc(40)">40%</button>
+      <button class="disc-opt" onclick="selectDisc(50)">50%</button>
+      <button class="disc-opt remove" onclick="selectDisc(0)">✕ Remove</button>
+    </div>
+
+    <button class="disc-apply-btn" id="disc-apply-btn" onclick="applyDiscount()" disabled>APPLY DISCOUNT</button>
+    <button class="modal-btn-secondary" onclick="closeDiscountModal()" style="
+      width:100%;padding:11px;border-radius:12px;border:1.5px solid var(--border);
+      background:transparent;color:var(--muted);font-size:13px;font-weight:700;
+      font-family:'Bebas Neue',sans-serif;letter-spacing:2px;cursor:pointer;margin-top:10px;
+    ">CANCEL</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- FIRST-TIME SETUP MODAL (only shows when no URL saved) -->
+<div class="modal-overlay show" id="setup-modal">
+  <div class="modal">
+    <h2>🔧 Setup POS</h2>
+    <p>One-time setup. Enter your Google Apps Script URL. This is saved on this device and won't be asked again.</p>
+    <div class="modal-input-row">
+      <label class="modal-label">Google Apps Script URL</label>
+      <input class="modal-input" id="script-url-input" type="url" placeholder="https://script.google.com/macros/s/…/exec">
+    </div>
+    <div class="modal-input-row">
+      <label class="modal-label">Your Name</label>
+      <input class="modal-input" id="setup-staff-input" type="text" placeholder="e.g. Maria">
+    </div>
+    <button class="modal-btn" onclick="saveSetup()">START TAKING ORDERS →</button>
+  </div>
+</div>
+
+<!-- STAFF LOGIN MODAL (shows on logout / staff switch) -->
+<div class="modal-overlay" id="login-modal">
+  <div class="modal login-modal">
+    <h2>👋 Staff Login</h2>
+    <p>Enter your name to start your shift. Orders will be logged under your name.</p>
+    <div class="modal-input-row">
+      <label class="modal-label">Your Name</label>
+      <input class="modal-input" id="login-staff-input" type="text" placeholder="e.g. Ahmed">
+    </div>
+    <button class="modal-btn" onclick="staffLogin()">START SHIFT →</button>
+    <button class="modal-btn-secondary" onclick="cancelLogin()">Cancel</button>
+  </div>
+</div>
+
+<script>
+// =============================================
+// MENU DATA — Edit this to match your menu!
+// =============================================
+const MENU = [
+  // Burgers
+  { id: 'b1', name: 'Classic Burger',   cat: 'Burgers',  price: 8.99,  emoji: '🍔', badge: null },
+  { id: 'b2', name: 'Double Stack',     cat: 'Burgers',  price: 11.49, emoji: '🍔', badge: '🔥HOT' },
+  { id: 'b3', name: 'Cheese Melt',      cat: 'Burgers',  price: 9.99,  emoji: '🧀', badge: null },
+  { id: 'b4', name: 'BBQ Smokey',       cat: 'Burgers',  price: 10.49, emoji: '🍖', badge: null },
+  { id: 'b5', name: 'Veggie Patty',     cat: 'Burgers',  price: 9.49,  emoji: '🥗', badge: '🌱VEG' },
+  { id: 'b6', name: 'Crispy Chicken',   cat: 'Burgers',  price: 9.99,  emoji: '🍗', badge: null },
+  // Sides
+  { id: 's1', name: 'Fries (S)',        cat: 'Sides',    price: 2.99,  emoji: '🍟', badge: null },
+  { id: 's2', name: 'Fries (L)',        cat: 'Sides',    price: 3.99,  emoji: '🍟', badge: null },
+  { id: 's3', name: 'Onion Rings',      cat: 'Sides',    price: 4.49,  emoji: '🧅', badge: null },
+  { id: 's4', name: 'Coleslaw',         cat: 'Sides',    price: 2.49,  emoji: '🥗', badge: null },
+  { id: 's5', name: 'Loaded Fries',     cat: 'Sides',    price: 5.99,  emoji: '🍟', badge: '🔥HOT' },
+  { id: 's6', name: 'Side Salad',       cat: 'Sides',    price: 3.49,  emoji: '🥬', badge: '🌱VEG' },
+  // Drinks
+  { id: 'd1', name: 'Cola',             cat: 'Drinks',   price: 1.99,  emoji: '🥤', badge: null },
+  { id: 'd2', name: 'Lemonade',         cat: 'Drinks',   price: 2.49,  emoji: '🍋', badge: null },
+  { id: 'd3', name: 'Orange Juice',     cat: 'Drinks',   price: 2.99,  emoji: '🍊', badge: null },
+  { id: 'd4', name: 'Milkshake',        cat: 'Drinks',   price: 4.99,  emoji: '🥛', badge: null },
+  { id: 'd5', name: 'Water',            cat: 'Drinks',   price: 0.99,  emoji: '💧', badge: null },
+  { id: 'd6', name: 'Iced Tea',         cat: 'Drinks',   price: 2.29,  emoji: '🧊', badge: null },
+  // Desserts
+  { id: 'ds1', name: 'Soft Serve',      cat: 'Desserts', price: 2.99,  emoji: '🍦', badge: null },
+  { id: 'ds2', name: 'Brownie',         cat: 'Desserts', price: 3.49,  emoji: '🍫', badge: null },
+  { id: 'ds3', name: 'Apple Pie Slice', cat: 'Desserts', price: 3.99,  emoji: '🥧', badge: null },
+];
+
+const TAX_RATE = 0.08;
+
+// =============================================
+// STATE
+// =============================================
+let cart = [];
+let orderType = 'dine-in';
+let paymentMethod = 'Cash';
+let orderCounter = 1;
+let activeCategory = 'All';
+let scriptUrl = '';
+let staffName = 'Staff';
+
+// Discount state
+let discScope = 'all';       // 'all' or 'item'
+let discPercent = 0;         // selected % in modal
+let discTargetId = null;     // which item id when scope=item
+
+// Order history (stored locally)
+let orderHistory = [];
+
+// =============================================
+// VIEW SWITCHING
+// =============================================
+function switchView(view) {
+  const isMenu = view === 'menu';
+  document.getElementById('nav-menu').classList.toggle('active', isMenu);
+  document.getElementById('nav-history').classList.toggle('active', !isMenu);
+  document.getElementById('menu-view').style.display = isMenu ? 'block' : 'none';
+  document.getElementById('history-panel').classList.toggle('visible', !isMenu);
+  if (!isMenu) {
+    loadHistory();
+    renderHistory();
+  }
+}
+
+// =============================================
+// INIT
+// =============================================
+window.onload = () => {
+  scriptUrl = localStorage.getItem('qb_script_url') || '';
+  staffName = localStorage.getItem('qb_staff') || '';
+
+  if (!scriptUrl) {
+    // First time — show full setup
+    document.getElementById('setup-modal').classList.add('show');
+  } else if (!staffName) {
+    // URL saved but no staff — show login
+    document.getElementById('setup-modal').classList.remove('show');
+    document.getElementById('login-modal').classList.add('show');
+  } else {
+    // All good — go straight in
+    document.getElementById('setup-modal').classList.remove('show');
+    document.getElementById('login-modal').classList.remove('show');
+    document.getElementById('staff-name').textContent = staffName;
+  }
+  loadOrderCounter();
+  buildCategories();
+  renderMenu();
+  updateClock();
+  setInterval(updateClock, 1000);
+};
+
+function saveSetup() {
+  const url  = document.getElementById('script-url-input').value.trim();
+  const name = document.getElementById('setup-staff-input').value.trim();
+  if (!url || !name) { alert('Please fill in both fields.'); return; }
+  scriptUrl = url;
+  staffName = name;
+  localStorage.setItem('qb_script_url', url);
+  localStorage.setItem('qb_staff', name);
+  document.getElementById('staff-name').textContent = name;
+  document.getElementById('setup-modal').classList.remove('show');
+}
+
+function logout() {
+  if (cart.length > 0) {
+    if (!confirm('You have items in the current order. Log out anyway?')) return;
+  }
+  clearOrder();
+  staffName = '';
+  localStorage.removeItem('qb_staff');
+  document.getElementById('login-staff-input').value = '';
+  document.getElementById('staff-name').textContent = 'Staff';
+  document.getElementById('login-modal').classList.add('show');
+  showToast('👋 Logged out successfully');
+}
+
+function staffLogin() {
+  const name = document.getElementById('login-staff-input').value.trim();
+  if (!name) { alert('Please enter your name.'); return; }
+  staffName = name;
+  localStorage.setItem('qb_staff', name);
+  document.getElementById('staff-name').textContent = name;
+  document.getElementById('login-modal').classList.remove('show');
+  showToast('✅ Welcome, ' + name + '!');
+}
+
+function cancelLogin() {
+  // Only allow cancel if there was already a staff logged in
+  if (localStorage.getItem('qb_staff')) {
+    staffName = localStorage.getItem('qb_staff');
+    document.getElementById('staff-name').textContent = staffName;
+    document.getElementById('login-modal').classList.remove('show');
+  }
+}
+
+function loadOrderCounter() {
+  const saved = parseInt(localStorage.getItem('qb_order_counter') || '1');
+  orderCounter = saved;
+  document.getElementById('order-num').textContent = '#' + String(orderCounter).padStart(4, '0');
+}
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+}
+
+// =============================================
+// MENU RENDERING
+// =============================================
+const CATEGORIES = ['All', ...new Set(MENU.map(i => i.cat))];
+
+function buildCategories() {
+  const tabs = document.getElementById('cat-tabs');
+  CATEGORIES.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-tab' + (cat === 'All' ? ' active' : '');
+    btn.textContent = cat;
+    btn.onclick = () => { activeCategory = cat; updateCatTabs(); renderMenu(); };
+    tabs.appendChild(btn);
+  });
+}
+
+function updateCatTabs() {
+  document.querySelectorAll('.cat-tab').forEach((btn, i) => {
+    btn.classList.toggle('active', CATEGORIES[i] === activeCategory);
+  });
+  document.getElementById('cat-heading').textContent = activeCategory === 'All' ? 'All Items' : activeCategory;
+}
+
+function renderMenu() {
+  const grid = document.getElementById('menu-grid');
+  grid.innerHTML = '';
+  const items = activeCategory === 'All' ? MENU : MENU.filter(i => i.cat === activeCategory);
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'menu-item';
+    div.id = 'mi-' + item.id;
+    div.innerHTML = `
+      ${item.badge ? `<div class="menu-item-badge">${item.badge}</div>` : ''}
+      <div class="menu-item-emoji">${item.emoji}</div>
+      <div class="menu-item-name">${item.name}</div>
+      <div class="menu-item-price">$${item.price.toFixed(2)}</div>`;
+    div.onclick = () => addToCart(item, div);
+    grid.appendChild(div);
+  });
+}
+
+// =============================================
+// CART LOGIC
+// =============================================
+function addToCart(item, el) {
+  el.classList.remove('add-flash');
+  void el.offsetWidth;
+  el.classList.add('add-flash');
+  const existing = cart.find(c => c.id === item.id);
+  if (existing) { existing.qty++; }
+  else { cart.push({ ...item, qty: 1, discount: 0 }); }
+  renderCart();
+}
+
+function changeQty(id, delta) {
+  const idx = cart.findIndex(c => c.id === id);
+  if (idx === -1) return;
+  cart[idx].qty += delta;
+  if (cart[idx].qty <= 0) cart.splice(idx, 1);
+  renderCart();
+}
+
+function clearOrder() {
+  cart = [];
+  document.getElementById('order-note').value = '';
+  renderCart();
+}
+
+function renderCart() {
+  const el = document.getElementById('order-items');
+  if (cart.length === 0) {
+    el.innerHTML = `<div class="empty-order"><div class="empty-order-icon">🛒</div><div class="empty-order-text">Tap items to add them</div></div>`;
+    updateTotals(0);
+    document.getElementById('submit-btn').disabled = true;
+    return;
+  }
+  el.innerHTML = cart.map(item => {
+    const hasDisc = item.discount > 0;
+    const discPrice = item.price * (1 - item.discount / 100);
+    const lineTotal = discPrice * item.qty;
+    return `
+    <div class="order-line" onclick="openDiscountModal('${item.id}')" style="cursor:pointer">
+      <div class="order-line-emoji">${item.emoji}</div>
+      <div class="order-line-info">
+        <div class="order-line-name">${item.name}${hasDisc ? `<span class="discount-tag">-${item.discount}%</span>` : ''}</div>
+        <div class="order-line-unit">
+          ${hasDisc ? `<span class="price-original">$${item.price.toFixed(2)}</span>$${discPrice.toFixed(2)}` : `$${item.price.toFixed(2)}`} ea
+        </div>
+      </div>
+      <div class="qty-ctrl" onclick="event.stopPropagation()">
+        <button class="qty-btn minus" onclick="changeQty('${item.id}', -1)">−</button>
+        <div class="qty-num">${item.qty}</div>
+        <button class="qty-btn plus" onclick="changeQty('${item.id}', 1)">+</button>
+      </div>
+      <div class="order-line-total">$${lineTotal.toFixed(2)}</div>
+    </div>`;
+  }).join('');
+  const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const discountAmt = cart.reduce((s, i) => {
+    const saved = i.price * i.qty * (i.discount / 100);
+    return s + saved;
+  }, 0);
+  updateTotals(subtotal, discountAmt);
+  document.getElementById('submit-btn').disabled = false;
+}
+
+function updateTotals(subtotal, discountAmt = 0) {
+  const afterDisc = subtotal - discountAmt;
+  const tax = afterDisc * TAX_RATE;
+  const grand = afterDisc + tax;
+  document.getElementById('subtotal').textContent = '$' + subtotal.toFixed(2);
+  const discRow = document.getElementById('discount-row');
+  if (discountAmt > 0) {
+    discRow.style.display = 'flex';
+    // Show the discount label — check if uniform
+    const discounts = [...new Set(cart.filter(i => i.discount > 0).map(i => i.discount))];
+    document.getElementById('discount-label').textContent =
+      discounts.length === 1 ? `(${discounts[0]}%)` : '(mixed)';
+    document.getElementById('discount-amount').textContent = '-$' + discountAmt.toFixed(2);
+  } else {
+    discRow.style.display = 'none';
+  }
+  document.getElementById('tax').textContent = '$' + tax.toFixed(2);
+  document.getElementById('grand-total').textContent = '$' + grand.toFixed(2);
+}
+
+// =============================================
+// ORDER TYPE & PAYMENT
+// =============================================
+function setOrderType(type) {
+  orderType = type;
+  ['dinein','takeaway','delivery'].forEach(t => {
+    document.getElementById('btn-' + t).classList.remove('active');
+  });
+  document.getElementById('btn-' + type.replace('-','')).classList.add('active');
+  const tableRow = document.getElementById('table-row');
+  tableRow.style.display = (type === 'dine-in') ? 'flex' : 'none';
+}
+
+function setPayment(method) {
+  paymentMethod = method;
+  ['cash','card','mobile'].forEach(m => document.getElementById('pay-' + m).classList.remove('active'));
+  document.getElementById('pay-' + method.toLowerCase()).classList.add('active');
+}
+
+// =============================================
+// SUBMIT ORDER
+// =============================================
+async function submitOrder() {
+  if (cart.length === 0) return;
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>SENDING…';
+
+  const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const discountAmt = cart.reduce((s, i) => s + i.price * i.qty * (i.discount / 100), 0);
+  const afterDisc = subtotal - discountAmt;
+  const tax = afterDisc * TAX_RATE;
+  const grand = afterDisc + tax;
+  const tableNum = document.getElementById('table-num').value || '';
+  const covers = document.getElementById('covers').value || '';
+  const note = document.getElementById('order-note').value || '';
+  const now = new Date();
+
+  const payload = {
+    orderNumber: String(orderCounter).padStart(4, '0'),
+    date: now.toLocaleDateString(),
+    time: now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}),
+    orderType,
+    table: tableNum,
+    covers,
+    staff: staffName,
+    items: cart.map(i => `${i.qty}x ${i.name}${i.discount > 0 ? ` (-${i.discount}%)` : ''}`).join(', '),
+    itemsDetail: JSON.stringify(cart.map(i => {
+      const discPrice = i.price * (1 - i.discount / 100);
+      return { name: i.name, qty: i.qty, unit: +discPrice.toFixed(2), line: +(discPrice * i.qty).toFixed(2), discount: i.discount };
+    })),
+    subtotal: subtotal.toFixed(2),
+    discount: discountAmt.toFixed(2),
+    tax: tax.toFixed(2),
+    total: grand.toFixed(2),
+    payment: paymentMethod,
+    note
+  };
+
+  try {
+    // Apps Script can't read POST body in no-cors mode, so we send via GET params
+    const params = new URLSearchParams(payload);
+    await fetch(scriptUrl + '?' + params.toString(), {
+      method: 'GET',
+      mode: 'no-cors'
+    });
+    // Increment order counter
+    orderCounter++;
+    localStorage.setItem('qb_order_counter', String(orderCounter));
+    document.getElementById('order-num').textContent = '#' + String(orderCounter).padStart(4, '0');
+    showToast('✅ Order #' + payload.orderNumber + ' sent!');
+    saveToHistory(payload, cart.map(i => ({...i})));
+    clearOrder();
+    document.getElementById('table-num').value = '';
+    document.getElementById('covers').value = '';
+  } catch (err) {
+    showToast('⚠️ Could not reach sheet. Check URL.');
+    console.error(err);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = 'SEND ORDER';
+}
+
+// =============================================
+// DISCOUNT LOGIC
+// =============================================
+function openDiscountModal(itemId) {
+  if (cart.length === 0) return;
+  discPercent = 0;
+  discTargetId = itemId;
+
+  // Pre-select scope based on how modal was opened
+  if (itemId) {
+    setDiscScope('item');
+    // Pre-select this item in dropdown
+    populateItemPicker();
+    document.getElementById('disc-item-select').value = itemId;
+    // Pre-fill existing discount if any
+    const item = cart.find(i => i.id === itemId);
+    if (item && item.discount > 0) { selectDisc(item.discount); }
+  } else {
+    setDiscScope('all');
+    populateItemPicker();
+  }
+
+  // Clear selected disc buttons
+  document.querySelectorAll('.disc-opt').forEach(b => b.classList.remove('selected'));
+  document.getElementById('disc-apply-btn').disabled = true;
+  document.getElementById('discount-modal').classList.add('show');
+}
+
+function closeDiscountModal() {
+  document.getElementById('discount-modal').classList.remove('show');
+}
+
+function setDiscScope(scope) {
+  discScope = scope;
+  document.getElementById('scope-item').classList.toggle('active', scope === 'item');
+  document.getElementById('scope-all').classList.toggle('active', scope === 'all');
+  document.getElementById('disc-item-picker').style.display = scope === 'item' ? 'block' : 'none';
+  document.getElementById('disc-subtitle').textContent =
+    scope === 'all' ? 'Discount applies to all items in order' : 'Discount applies to selected item only';
+}
+
+function populateItemPicker() {
+  const sel = document.getElementById('disc-item-select');
+  sel.innerHTML = cart.map(i =>
+    `<option value="${i.id}">${i.name}${i.discount > 0 ? ` (-${i.discount}%)` : ''} — $${i.price.toFixed(2)}</option>`
+  ).join('');
+}
+
+function selectDisc(pct) {
+  discPercent = pct;
+  document.querySelectorAll('.disc-opt').forEach(b => b.classList.remove('selected'));
+  event.target.classList.add('selected');
+  document.getElementById('disc-apply-btn').disabled = false;
+  document.getElementById('disc-apply-btn').textContent =
+    pct === 0 ? 'REMOVE DISCOUNT' : `APPLY ${pct}% DISCOUNT`;
+}
+
+function applyDiscount() {
+  if (discScope === 'all') {
+    cart.forEach(i => { i.discount = discPercent; });
+    if (discPercent === 0) showToast('✅ All discounts removed');
+    else showToast(`🏷️ ${discPercent}% discount applied to all items`);
+  } else {
+    const id = document.getElementById('disc-item-select').value;
+    const item = cart.find(i => i.id === id);
+    if (item) {
+      item.discount = discPercent;
+      if (discPercent === 0) showToast(`✅ Discount removed from ${item.name}`);
+      else showToast(`🏷️ ${discPercent}% off ${item.name}`);
+    }
+  }
+  closeDiscountModal();
+  renderCart();
+}
+
+function removeAllDiscounts() {
+  cart.forEach(i => { i.discount = 0; });
+  renderCart();
+  showToast('✅ All discounts removed');
+}
+
+// =============================================
+// ORDER HISTORY
+// =============================================
+function loadHistory() {
+  try { orderHistory = JSON.parse(localStorage.getItem('qb_history') || '[]'); }
+  catch(e) { orderHistory = []; }
+}
+
+function saveToHistory(payload, cartSnapshot) {
+  loadHistory();
+  orderHistory.unshift({
+    orderNumber: payload.orderNumber,
+    date: payload.date,
+    time: payload.time,
+    orderType: payload.orderType,
+    table: payload.table,
+    covers: payload.covers,
+    staff: payload.staff,
+    items: cartSnapshot,
+    subtotal: payload.subtotal,
+    discount: payload.discount,
+    tax: payload.tax,
+    total: payload.total,
+    payment: payload.payment,
+    note: payload.note
+  });
+  if (orderHistory.length > 200) orderHistory = orderHistory.slice(0, 200);
+  localStorage.setItem('qb_history', JSON.stringify(orderHistory));
+}
+
+function renderHistory() {
+  loadHistory();
+  const search = (document.getElementById('history-search').value || '').toLowerCase();
+  const typeF  = document.getElementById('history-filter-type').value;
+  const staffF = document.getElementById('history-filter-staff').value;
+
+  // Populate staff dropdown
+  const staffSet = [...new Set(orderHistory.map(o => o.staff))].filter(Boolean);
+  const staffSel = document.getElementById('history-filter-staff');
+  const curStaffVal = staffSel.value;
+  staffSel.innerHTML = '<option value="">All Staff</option>' +
+    staffSet.map(s => `<option value="${s}"${s === curStaffVal ? ' selected' : ''}>${s}</option>`).join('');
+
+  let filtered = orderHistory.filter(o => {
+    if (typeF && o.orderType !== typeF) return false;
+    if (staffF && o.staff !== staffF) return false;
+    if (search) {
+      const hay = [o.orderNumber, o.staff, o.date,
+        (o.items||[]).map(i => i.name).join(' '), o.note].join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  // Today stats
+  const today = new Date().toLocaleDateString();
+  const todayOrders = orderHistory.filter(o => o.date === today);
+  const todayRevenue = todayOrders.reduce((s, o) => s + parseFloat(o.total||0), 0);
+  document.getElementById('hstat-orders').textContent = todayOrders.length;
+  document.getElementById('hstat-revenue').textContent = '$' + todayRevenue.toFixed(0);
+  document.getElementById('hstat-avg').textContent = todayOrders.length
+    ? '$' + (todayRevenue / todayOrders.length).toFixed(0) : '$0';
+
+  const list = document.getElementById('history-list');
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty-history">
+      <div class="empty-history-icon">📋</div>
+      <div class="empty-history-text">${orderHistory.length === 0 ? 'No orders sent yet' : 'No orders match filter'}</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map((o, idx) => {
+    const typeClass = o.orderType === 'dine-in' ? 'badge-dinein' : o.orderType === 'takeaway' ? 'badge-takeaway' : 'badge-delivery';
+    const typeLabel = o.orderType === 'dine-in' ? '🪑 Dine In' : o.orderType === 'takeaway' ? '🥡 Takeaway' : '🛵 Delivery';
+    const tableInfo = (o.orderType === 'dine-in' && o.table && o.table !== '—') ? ` · Table ${o.table}` : '';
+    const discountAmt = parseFloat(o.discount) || 0;
+    const items = o.items || [];
+
+    const itemRows = items.map(i => `
+      <div class="history-item-row">
+        <span>${i.qty}× ${i.name}${i.discount > 0 ? ` <span style="color:var(--accent2);font-size:10px">-${i.discount}%</span>` : ''}</span>
+        <span>$${parseFloat(i.line).toFixed(2)}</span>
+      </div>`).join('');
+
+    return `<div class="history-card">
+      <div class="history-card-header" onclick="toggleCard(${idx})">
+        <div class="history-card-left">
+          <div class="history-order-num">#${o.orderNumber} <span style="color:var(--muted);font-size:11px;font-weight:500">${o.time}</span></div>
+          <div class="history-meta">👤 ${o.staff} · ${o.date}${tableInfo} · 💳 ${o.payment}</div>
+          <div class="history-meta" style="margin-top:2px;color:var(--text);opacity:.7">${items.map(i=>`${i.qty}× ${i.name}`).join(', ')}</div>
+        </div>
+        <div class="history-card-right">
+          <div class="history-total">$${parseFloat(o.total).toFixed(2)}</div>
+          <div class="history-type-badge ${typeClass}">${typeLabel}</div>
+        </div>
+      </div>
+      <div class="history-card-body" id="hbody-${idx}">
+        ${itemRows}
+        <hr class="history-divider">
+        <div class="history-total-row"><span>Subtotal</span><span>$${parseFloat(o.subtotal).toFixed(2)}</span></div>
+        ${discountAmt > 0 ? `<div class="history-total-row" style="color:var(--accent2)"><span>Discount</span><span>-$${discountAmt.toFixed(2)}</span></div>` : ''}
+        <div class="history-total-row"><span>Tax</span><span>$${parseFloat(o.tax).toFixed(2)}</span></div>
+        <div class="history-total-row grand-row"><span>TOTAL</span><span>$${parseFloat(o.total).toFixed(2)}</span></div>
+        ${o.note ? `<div class="history-note">📝 ${o.note}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleCard(idx) {
+  document.getElementById('hbody-' + idx).classList.toggle('open');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// Prevent scroll-bounce on iPad
+document.body.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+document.getElementById('menu-panel').addEventListener('touchmove', e => e.stopPropagation(), { passive: true });
+document.getElementById('order-items').addEventListener('touchmove', e => e.stopPropagation(), { passive: true });
+</script>
+</body>
+</html>
